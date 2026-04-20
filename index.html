@@ -1,20 +1,54 @@
-<!DOCTYPE html>
+html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>California Housing DNN</title>
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <style>
-  body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #0b0e14; color: #e8eaf0; }
+  body {
+    font-family: monospace;
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 20px;
+    background: #0b0e14;
+    color: #e8eaf0;
+  }
   h1 { color: #f0b429; }
   .field { margin: 12px 0; }
-  label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
-  input[type=range] { width: 100%; accent-color: #f0b429; }
-  .val { font-size: 14px; }
-  button { background: #f0b429; color: #000; border: none; padding: 12px 28px; font-size: 14px; cursor: pointer; margin-top: 20px; font-family: monospace; }
-  #result { margin-top: 24px; font-size: 2rem; color: #f0b429; }
-  #status { font-size: 12px; color: #888; margin-bottom: 20px; }
+  label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  input[type=range] {
+    width: 100%;
+    accent-color: #f0b429;
+  }
+  .val {
+    font-size: 14px;
+  }
+  button {
+    background: #f0b429;
+    color: #000;
+    border: none;
+    padding: 12px 28px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-family: monospace;
+  }
+  #result {
+    margin-top: 24px;
+    font-size: 2rem;
+    color: #f0b429;
+  }
+  #status {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 20px;
+  }
 </style>
 </head>
 <body>
@@ -27,58 +61,88 @@
 
 <script>
 const FEATURES = [
-  { key:"MedInc",     label:"Median Income ($10k)",        min:0.5,   max:15,    step:0.1,  dec:2, def:3.87  },
-  { key:"HouseAge",   label:"House Median Age (years)",    min:1,     max:52,    step:1,    dec:0, def:29    },
-  { key:"AveRooms",   label:"Avg Rooms per Household",     min:1,     max:15,    step:0.1,  dec:1, def:5.4   },
-  { key:"AveBedrms",  label:"Avg Bedrooms per Household",  min:0.5,   max:5,     step:0.05, dec:2, def:1.1   },
-  { key:"Population", label:"Block Group Population",      min:3,     max:5000,  step:10,   dec:0, def:1425  },
-  { key:"AveOccup",   label:"Avg Occupants per Household", min:1,     max:10,    step:0.1,  dec:1, def:2.8   },
-  { key:"Latitude",   label:"Latitude (degrees N)",        min:32.5,  max:42,    step:0.01, dec:2, def:35.6  },
-  { key:"Longitude",  label:"Longitude (degrees W)",       min:-124.5,max:-114,  step:0.01, dec:2, def:-119.6}
+  { key:"MedInc",     label:"Median Income ($10k)",        min:0.5,    max:15,    step:0.1,  dec:2, def:3.87  },
+  { key:"HouseAge",   label:"House Median Age (years)",    min:1,      max:52,    step:1,    dec:0, def:29    },
+  { key:"AveRooms",   label:"Avg Rooms per Household",     min:1,      max:15,    step:0.1,  dec:1, def:5.4   },
+  { key:"AveBedrms",  label:"Avg Bedrooms per Household",  min:0.5,    max:5,     step:0.05, dec:2, def:1.1   },
+  { key:"Population", label:"Block Group Population",      min:3,      max:5000,  step:10,   dec:0, def:1425  },
+  { key:"AveOccup",   label:"Avg Occupants per Household", min:1,      max:10,    step:0.1,  dec:1, def:2.8   },
+  { key:"Latitude",   label:"Latitude (degrees N)",        min:32.5,   max:42,    step:0.01, dec:2, def:35.6  },
+  { key:"Longitude",  label:"Longitude (degrees W)",       min:-124.5, max:-114,  step:0.01, dec:2, def:-119.6 }
 ];
 
-let session = null, scaler = null;
+let session = null;
 const vals = {};
-FEATURES.forEach(f => vals[f.key] = f.def);
+
+FEATURES.forEach(function(f) {
+  vals[f.key] = f.def;
+});
 
 const container = document.getElementById("inputs");
-FEATURES.forEach(f => {
+
+FEATURES.forEach(function(f) {
   const div = document.createElement("div");
   div.className = "field";
-  div.innerHTML = `<label>${f.label}</label>
-    <input type="range" id="r-${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.def}"/>
-    <span class="val" id="v-${f.key}">${f.def.toFixed(f.dec)}</span>`;
+  div.innerHTML =
+    '<label>' + f.label + '</label>' +
+    '<input type="range" id="r-' + f.key + '" min="' + f.min + '" max="' + f.max + '" step="' + f.step + '" value="' + f.def + '"/>' +
+    '<span class="val" id="v-' + f.key + '">' + f.def.toFixed(f.dec) + '</span>';
+
   container.appendChild(div);
-  div.querySelector(`#r-${f.key}`).addEventListener("input", e => {
+
+  div.querySelector("#r-" + f.key).addEventListener("input", function(e) {
     const v = parseFloat(e.target.value);
     vals[f.key] = v;
-    document.getElementById(`v-${f.key}`).textContent = v.toFixed(f.dec);
+    document.getElementById("v-" + f.key).textContent = v.toFixed(f.dec);
   });
 });
 
 async function init() {
-  const s = document.getElementById("status");
+  const status = document.getElementById("status");
+
   try {
-    const r = await fetch("scaler_params.json");
-    scaler = await r.json();
-    session = await ort.InferenceSession.create("housing_dnn.onnx", { executionProviders: ["wasm"] });
-    s.textContent = "Model ready.";
+    session = await ort.InferenceSession.create("housing_dnn.onnx");
+    status.textContent = "Model ready.";
     document.getElementById("btn").disabled = false;
-  } catch(e) {
-    s.textContent = "Error: " + e.message;
+  } catch (e) {
+    status.textContent = "Error: " + e.message;
+    console.error(e);
   }
 }
-init();
 
-document.getElementById("btn").addEventListener("click", async () => {
-  const raw  = FEATURES.map(f => vals[f.key]);
-  const norm = raw.map((v, i) => (v - scaler.mean[i]) / scaler.std[i]);
-  const t    = new ort.Tensor("float32", Float32Array.from(norm), [1, 8]);
-  const out  = await session.run({ input: t });
-  const pred = out.output.data[0] * 100_000;
-  document.getElementById("result").textContent =
-    new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 }).format(Math.max(0, pred));
+document.getElementById("btn").addEventListener("click", async function() {
+  const status = document.getElementById("status");
+  const result = document.getElementById("result");
+
+  try {
+    const raw = FEATURES.map(function(f) {
+      return vals[f.key];
+    });
+
+    const tensor = new ort.Tensor("float32", Float32Array.from(raw), [1, 8]);
+    const output = await session.run({ input: tensor });
+    const pred = output.output.data[0] * 100000;
+
+    result.textContent = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0
+    }).format(Math.max(0, pred));
+
+    status.textContent = "Prediction complete.";
+  } catch (e) {
+    status.textContent = "Prediction error: " + e.message;
+    console.error(e);
+  }
 });
+
+init();
 </script>
 </body>
 </html>
+"""
+
+with open("/content/index.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("index.html saved successfully")
